@@ -1,0 +1,1922 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice Generator</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: white;
+            padding: 10px;
+        }
+
+        .header h1 {
+            font-size: clamp(1.8rem, 5vw, 2.5rem);
+            font-weight: 700;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .form-section, .preview-section {
+            background: white;
+            border-radius: 15px;
+            padding: clamp(15px, 4vw, 30px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: fadeIn 0.5s ease-in;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .preview-section {
+            position: sticky;
+            top: 20px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .preview-section::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .preview-section::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+
+        .preview-section::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 10px;
+        }
+
+        .preview-section::-webkit-scrollbar-thumb:hover {
+            background: #5a6fd8;
+        }
+
+        .form-section h2, .preview-section h2 {
+            color: #333;
+            margin-top: 0;
+            font-weight: 600;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+        }
+
+        .section-divider {
+            border-bottom: 2px solid #f0f0f0;
+            margin: 25px 0;
+            padding-bottom: 15px;
+        }
+
+        .section-divider h3 {
+            color: #667eea;
+            font-size: clamp(1rem, 2.5vw, 1.2rem);
+            margin: 0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: clamp(13px, 2vw, 14px);
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .form-group input.error, .form-group textarea.error {
+            border-color: #dc3545;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+            animation: shake 0.3s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .products-section {
+            margin: 20px 0;
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .products-section h3 {
+            margin-top: 0;
+        }
+
+        #products-container {
+            width: 100%;
+            min-width: 600px;
+        }
+
+        .product-row {
+            display: grid;
+            grid-template-columns: 2fr 0.8fr 1fr 1fr auto;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .product-row:hover {
+            background: #f0f2f5;
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+
+        .product-row input {
+            padding: 10px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: clamp(12px, 2vw, 13px);
+            transition: all 0.3s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .product-row input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+        }
+
+        .product-row .product-name {
+            min-width: 0;
+        }
+
+        .product-row .product-qty {
+            min-width: 60px;
+        }
+
+        .product-row .product-rate {
+            min-width: 80px;
+        }
+
+        .product-row .product-subtotal {
+            min-width: 80px;
+            background: #fff;
+        }
+
+        .remove-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s;
+            white-space: nowrap;
+            min-width: 85px;
+            flex-shrink: 0;
+        }
+
+        .remove-btn:hover {
+            background: #c82333;
+            transform: scale(1.05);
+        }
+
+        .remove-btn:active {
+            transform: scale(0.95);
+        }
+
+        .add-product-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 10px;
+            width: 100%;
+            transition: all 0.3s;
+            font-size: clamp(13px, 2vw, 14px);
+        }
+
+        .add-product-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .add-product-btn:active {
+            transform: translateY(0);
+        }
+
+        .total-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .total-row#discount-row {
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        .total-row#discount-row span {
+            color: #28a745;
+        }
+
+        .total-row.grand-total {
+            font-weight: 600;
+            font-size: 1.1rem;
+            border-top: 2px solid #667eea;
+            padding-top: 10px;
+            margin-top: 10px;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: clamp(13px, 2vw, 14px);
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(23, 162, 184, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #333;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+            max-width: 90%;
+        }
+
+        .toast.show {
+            display: flex;
+        }
+
+        .toast.success {
+            background: #28a745;
+        }
+
+        .toast.error {
+            background: #dc3545;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .invoice-preview {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 20px;
+            min-height: 500px;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .invoice-preview::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            border-radius: 8px;
+        }
+
+        .company-name-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .company-name-header[style*="display: none"],
+        .company-name-header.hidden {
+            display: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 0 !important;
+        }
+
+        .company-name-header h3 {
+            margin: 0;
+            font-size: clamp(1.2rem, 3vw, 1.6rem);
+            font-weight: 700;
+            color: #333;
+            letter-spacing: 1px;
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .invoice-header:empty,
+        .invoice-header:not(:has(.invoice-title:not([style*="display: none"]))) {
+            display: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .invoice-header:empty,
+        .invoice-header:not(:has(.invoice-title:not([style*="display: none"]))) {
+            display: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+        }
+
+        .invoice-title {
+            font-size: clamp(1.3rem, 3vw, 1.8rem);
+            font-weight: 700;
+            color: #333;
+        }
+
+        .invoice-details {
+            text-align: right;
+            color: #666;
+            font-size: clamp(11px, 2vw, 13px);
+        }
+
+        .invoice-details:empty {
+            display: none !important;
+        }
+
+        .invoice-details > div[style*="display: none"] {
+            display: none !important;
+        }
+
+        .invoice-details > div {
+            margin-bottom: 4px;
+        }
+
+        .invoice-details .day-name {
+            display: block;
+            font-size: 10px;
+            color: #999;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        .billing-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 25px;
+        }
+
+        .billing-section:empty,
+        .billing-section:not(:has([style*="display: block"])) {
+            display: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .billing-info[style*="display: none"] {
+            display: none !important;
+        }
+
+        .billing-info h4 {
+            margin: 0 0 8px 0;
+            color: #333;
+            font-weight: 600;
+            font-size: clamp(12px, 2vw, 14px);
+        }
+
+        .billing-info p {
+            margin: 5px 0;
+            color: #666;
+            line-height: 1.5;
+            font-size: clamp(11px, 2vw, 12px);
+        }
+
+        .products-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: clamp(11px, 2vw, 13px);
+            table-layout: fixed;
+        }
+
+        .products-table th,
+        .products-table td {
+            padding: 8px 6px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            word-wrap: break-word;
+        }
+
+        .products-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+            font-size: clamp(11px, 2vw, 12px);
+        }
+
+        .products-table td {
+            color: #666;
+            font-size: clamp(11px, 2vw, 12px);
+        }
+
+        .products-table .text-right {
+            text-align: right;
+        }
+
+        .products-table th:first-child,
+        .products-table td:first-child {
+            width: 40%;
+        }
+
+        .products-table th:nth-child(2),
+        .products-table td:nth-child(2) {
+            width: 15%;
+        }
+
+        .products-table th:nth-child(3),
+        .products-table td:nth-child(3) {
+            width: 20%;
+        }
+
+        .products-table th:nth-child(4),
+        .products-table td:nth-child(4) {
+            width: 25%;
+        }
+
+        .invoice-totals {
+            margin-left: auto;
+            width: 100%;
+            max-width: 280px;
+        }
+
+        .invoice-totals .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: clamp(12px, 2vw, 13px);
+        }
+
+        .invoice-totals .total-row#preview-discount-row {
+            color: #28a745;
+            font-weight: 500;
+        }
+
+        .invoice-totals .total-row#preview-discount-row span {
+            color: #28a745;
+        }
+
+        .invoice-totals .grand-total {
+            background: #667eea;
+            color: white;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: clamp(13px, 2.5vw, 15px);
+            margin-top: 5px;
+        }
+
+        .signature-section {
+            margin-top: 30px;
+            text-align: right;
+        }
+
+        .signature-section h4 {
+            margin-bottom: 30px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #333;
+            width: 180px;
+            margin-left: auto;
+            padding-top: 5px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* Template Styles */
+        #invoice-preview.template-modern {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+        }
+
+        #invoice-preview.template-modern .invoice-title {
+            color: white !important;
+        }
+
+        #invoice-preview.template-modern .invoice-details {
+            color: rgba(255,255,255,0.95) !important;
+        }
+
+        #invoice-preview.template-modern .invoice-details div {
+            color: rgba(255,255,255,0.95) !important;
+        }
+
+        #invoice-preview.template-modern .invoice-details .day-name {
+            color: rgba(255,255,255,0.7) !important;
+        }
+
+        #invoice-preview.template-modern .company-name-header {
+            border-bottom-color: rgba(255,255,255,0.3) !important;
+        }
+
+        #invoice-preview.template-modern .company-name-header h3 {
+            color: white !important;
+        }
+
+        #invoice-preview.template-modern .billing-info h4 {
+            color: white !important;
+        }
+
+        #invoice-preview.template-modern .billing-info p {
+            color: rgba(255,255,255,0.9) !important;
+        }
+
+        #invoice-preview.template-modern .products-table th {
+            background: rgba(255,255,255,0.2) !important;
+            color: white !important;
+        }
+
+        #invoice-preview.template-modern .products-table td {
+            color: rgba(255,255,255,0.9) !important;
+            border-bottom-color: rgba(255,255,255,0.2) !important;
+        }
+
+        #invoice-preview.template-modern .invoice-header {
+            border-bottom-color: rgba(255,255,255,0.3) !important;
+        }
+
+        #invoice-preview.template-modern .invoice-totals .total-row {
+            color: white !important;
+        }
+
+        #invoice-preview.template-modern .invoice-totals .total-row span {
+            color: white !important;
+        }
+
+        #invoice-preview.template-modern .invoice-totals .total-row#preview-discount-row {
+            color: rgba(144, 238, 144, 1) !important;
+        }
+
+        #invoice-preview.template-modern .invoice-totals .total-row#preview-discount-row span {
+            color: rgba(144, 238, 144, 1) !important;
+        }
+
+        #invoice-preview.template-modern .invoice-totals .grand-total {
+            background: rgba(255,255,255,0.25) !important;
+            color: white !important;
+            border: 2px solid rgba(255,255,255,0.4) !important;
+        }
+
+        #invoice-preview.template-modern .signature-section h4 {
+            color: white !important;
+        }
+
+        #invoice-preview.template-modern .signature-line {
+            border-top-color: rgba(255,255,255,0.6) !important;
+            color: rgba(255,255,255,0.9) !important;
+        }
+
+        #invoice-preview.template-classic {
+            border: 3px solid #333 !important;
+            background: #fafafa !important;
+        }
+
+        #invoice-preview.template-classic .invoice-title {
+            color: #333 !important;
+            text-decoration: underline;
+        }
+
+        #invoice-preview.template-classic .invoice-header {
+            border-bottom-color: #333 !important;
+        }
+
+        #invoice-preview.template-classic .company-name-header {
+            border-bottom: 3px double #333 !important;
+        }
+
+        #invoice-preview.template-classic .company-name-header h3 {
+            color: #333 !important;
+            text-transform: uppercase !important;
+        }
+
+        #invoice-preview.template-minimal {
+            background: white !important;
+            border-left: 5px solid #667eea !important;
+        }
+
+        #invoice-preview.template-minimal .invoice-title {
+            color: #667eea !important;
+        }
+
+        #invoice-preview.template-minimal .invoice-header {
+            border-bottom-color: #667eea !important;
+        }
+
+        #invoice-preview.template-minimal .invoice-totals .grand-total {
+            background: #667eea !important;
+        }
+
+        #invoice-preview.template-minimal .company-name-header {
+            border-bottom-color: #667eea !important;
+        }
+
+        #invoice-preview.template-minimal .company-name-header h3 {
+            color: #667eea !important;
+        }
+
+        #invoice-preview.template-simple {
+            background: white !important;
+            border: 2px solid #dee2e6 !important;
+            padding: 20px !important;
+        }
+
+        #invoice-preview.template-simple .invoice-header {
+            border-bottom: 3px double #333 !important;
+            margin-bottom: 20px !important;
+            padding-bottom: 10px !important;
+        }
+
+        #invoice-preview.template-simple .invoice-title {
+            color: #333 !important;
+            font-weight: 700 !important;
+            font-size: clamp(1.5rem, 3vw, 2rem) !important;
+            letter-spacing: 3px !important;
+        }
+
+        #invoice-preview.template-simple .invoice-details {
+            font-size: clamp(12px, 2vw, 14px) !important;
+            color: #555 !important;
+        }
+
+        #invoice-preview.template-simple .invoice-details .day-name {
+            display: block;
+            font-size: 11px;
+            color: #888;
+            font-style: italic;
+            margin-top: 2px;
+        }
+
+        #invoice-preview.template-simple .billing-section {
+            border: 1px solid #dee2e6 !important;
+            padding: 15px !important;
+            background: #f8f9fa !important;
+            border-radius: 0 !important;
+            margin-bottom: 20px !important;
+        }
+
+        #invoice-preview.template-simple .billing-info h4 {
+            color: #333 !important;
+            font-size: 13px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1px !important;
+            border-bottom: 1px solid #dee2e6 !important;
+            padding-bottom: 5px !important;
+            margin-bottom: 10px !important;
+        }
+
+        #invoice-preview.template-simple .billing-info p {
+            color: #555 !important;
+            line-height: 1.6 !important;
+        }
+
+        #invoice-preview.template-simple .products-table {
+            border: 2px solid #333 !important;
+        }
+
+        #invoice-preview.template-simple .products-table th {
+            background: #333 !important;
+            color: white !important;
+            font-weight: 600 !important;
+            text-transform: uppercase !important;
+            font-size: 11px !important;
+            letter-spacing: 0.5px !important;
+            border: 1px solid #333 !important;
+        }
+
+        #invoice-preview.template-simple .products-table td {
+            color: #333 !important;
+            border: 1px solid #dee2e6 !important;
+            background: white !important;
+        }
+
+        #invoice-preview.template-simple .products-table tbody tr:nth-child(even) td {
+            background: #f8f9fa !important;
+        }
+
+        #invoice-preview.template-simple .invoice-totals {
+            border: 2px solid #333 !important;
+            padding: 10px !important;
+            background: white !important;
+        }
+
+        #invoice-preview.template-simple .invoice-totals .total-row {
+            color: #333 !important;
+            font-weight: 500 !important;
+        }
+
+        #invoice-preview.template-simple .invoice-totals .grand-total {
+            background: #333 !important;
+            color: white !important;
+            font-weight: 700 !important;
+            border: none !important;
+        }
+
+        #invoice-preview.template-simple .company-name-header {
+            border-bottom: 3px double #333 !important;
+            background: #f8f9fa !important;
+            padding: 15px !important;
+            margin-bottom: 20px !important;
+        }
+
+        #invoice-preview.template-simple .company-name-header h3 {
+            color: #333 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 3px !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header {
+                margin-bottom: 15px;
+            }
+
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .form-section, .preview-section {
+                padding: 15px;
+            }
+
+            .preview-section {
+                position: static;
+                max-height: none;
+            }
+            
+            .product-row {
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 12px;
+            }
+
+            .product-row input {
+                width: 100%;
+            }
+
+            .product-row .product-name::placeholder {
+                content: "Product Name";
+            }
+
+            .product-row .product-qty::placeholder {
+                content: "Quantity";
+            }
+
+            .product-row .product-rate::placeholder {
+                content: "Rate";
+            }
+
+            .product-row .product-subtotal::placeholder {
+                content: "Subtotal";
+            }
+
+            .remove-btn {
+                width: 100%;
+                padding: 10px;
+                min-width: auto;
+            }
+
+            #products-container {
+                min-width: auto;
+            }
+
+            .products-section {
+                overflow-x: visible;
+            }
+            
+            .billing-section {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .invoice-preview {
+                padding: 20px;
+                font-size: 14px;
+            }
+
+            .invoice-title {
+                font-size: 1.5rem;
+            }
+
+            .products-table {
+                font-size: 12px;
+            }
+
+            .products-table th,
+            .products-table td {
+                padding: 8px 4px;
+                font-size: 11px;
+            }
+
+            .invoice-totals {
+                width: 100%;
+            }
+
+            .toast {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .form-section h2, .preview-section h2 {
+                font-size: 1.1rem;
+            }
+
+            .invoice-title {
+                font-size: 1.5rem;
+            }
+
+            .product-row {
+                padding: 10px;
+            }
+
+            .btn {
+                padding: 12px 16px;
+            }
+        }
+
+        /* Tablet specific */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                padding: 15px;
+            }
+
+            .main-content {
+                gap: 20px;
+            }
+
+            .product-row {
+                grid-template-columns: 1.5fr 0.6fr 0.8fr 0.8fr auto;
+                gap: 6px;
+                padding: 10px;
+            }
+
+            .product-row input {
+                padding: 8px 6px;
+                font-size: 12px;
+            }
+
+            .remove-btn {
+                padding: 8px 10px;
+                font-size: 10px;
+                min-width: 75px;
+            }
+        }
+
+        /* Desktop optimization */
+        @media (min-width: 1025px) {
+            .product-row {
+                grid-template-columns: 2fr 0.7fr 0.9fr 0.9fr auto;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+
+            .container {
+                max-width: 100%;
+            }
+
+            .form-section,
+            .header,
+            .action-buttons {
+                display: none !important;
+            }
+
+            .preview-section {
+                box-shadow: none;
+                padding: 0;
+            }
+
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .invoice-preview {
+                box-shadow: none;
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="container">
+   <header class="header">
+    <h1 id="app-title">📄 Invoice Generator</h1>
+    <p>Create professional invoices in seconds</p>
+   </header>
+   <div class="main-content">
+    <div class="form-section">
+     <h2>Invoice Details</h2>
+     
+     <div class="section-divider">
+       <h3>🎨 Template & Style</h3>
+     </div>
+     <div class="form-group"><label for="template">Template Style</label> <select id="template"> <option value="modern">Modern</option> <option value="classic">Classic</option> <option value="minimal">Minimal</option> <option value="simple">Simple</option> </select>
+     </div>
+     
+     <div class="section-divider">
+       <h3>📋 Invoice Information</h3>
+     </div>
+     <div class="checkbox-group"><input type="checkbox" id="show-company-name"> <label for="show-company-name">Show Company Name</label>
+     </div>
+     <div class="form-group" id="company-name-group" style="display: none;"><label for="company-name">Company Name *</label> <input type="text" id="company-name" placeholder="Your Business Name" required>
+      <span class="error-message" id="company-name-error">Company name is required</span>
+     </div>
+     <div class="checkbox-group"><input type="checkbox" id="show-invoice-number"> <label for="show-invoice-number">Show Invoice Number</label>
+     </div>
+     <div class="form-group" id="invoice-number-group" style="display: none;"><label for="invoice-number">Invoice Number *</label> <input type="text" id="invoice-number" placeholder="INV-001" required>
+      <span class="error-message" id="invoice-number-error">Invoice number is required</span>
+     </div>
+     
+     <div class="section-divider">
+       <h3>🏢 Billing Details</h3>
+     </div>
+     <div class="checkbox-group"><input type="checkbox" id="show-bill-from"> <label for="show-bill-from">Show Bill From</label>
+     </div>
+     <div class="form-group" id="bill-from-group" style="display: none;"><label for="bill-from">Bill From (Company Details) *</label> <textarea id="bill-from" rows="3" placeholder="Your Company Name
+123 Business Street
+City, State 12345" required></textarea>
+      <span class="error-message" id="bill-from-error">Company details are required</span>
+     </div>
+     <div class="checkbox-group"><input type="checkbox" id="show-bill-to"> <label for="show-bill-to">Show Bill To</label>
+     </div>
+     <div class="form-group" id="bill-to-group" style="display: none;"><label for="bill-to">Bill To (Client Details) *</label> <textarea id="bill-to" rows="3" placeholder="Client Name
+456 Client Avenue
+City, State 67890" required></textarea>
+      <span class="error-message" id="bill-to-error">Client details are required</span>
+     </div>
+     
+     <div class="section-divider">
+       <h3>📅 Dates</h3>
+     </div>
+     <div class="checkbox-group"><input type="checkbox" id="show-date" checked> <label for="show-date">Show Date</label>
+     </div>
+     <div class="form-group" id="date-group"><label for="invoice-date">Invoice Date</label> <input type="date" id="invoice-date">
+     </div>
+     <div class="checkbox-group"><input type="checkbox" id="show-due-date"> <label for="show-due-date">Show Due Date</label>
+     </div>
+     <div class="form-group" id="due-date-group" style="display: none;"><label for="due-date">Due Date</label> <input type="date" id="due-date">
+     </div>
+     
+     <div class="section-divider">
+       <h3>✍️ Signature</h3>
+     </div>
+     <div class="checkbox-group"><input type="checkbox" id="show-signature"> <label for="show-signature">Show Signature</label>
+     </div>
+     <div class="form-group" id="signature-group" style="display: none;"><label for="signature-text">Signature Text</label> <input type="text" id="signature-text" placeholder="Authorized Signature">
+     </div>
+     
+     <div class="section-divider">
+       <h3>🛒 Products/Services</h3>
+     </div>
+     <div class="products-section">
+      <div id="products-container">
+       <div class="product-row"><input type="text" placeholder="Product Name" class="product-name"> <input type="number" placeholder="Qty" class="product-qty" min="1" value="1"> <input type="number" placeholder="Rate" class="product-rate" min="0" step="0.01"> <input type="text" placeholder="0.00" class="product-subtotal" readonly> <button type="button" class="remove-btn" onclick="removeProduct(this)">🗑️ Remove</button>
+       </div>
+      </div><button type="button" class="add-product-btn" onclick="addProduct()">➕ Add Product</button>
+     </div>
+     
+     <div class="section-divider">
+       <h3>💰 Discount & Totals</h3>
+     </div>
+     <div class="checkbox-group"><input type="checkbox" id="show-discount"> <label for="show-discount">Apply Discount</label>
+     </div>
+     <div class="form-group" id="discount-group" style="display: none;"><label for="discount-percent">Discount Percentage (%)</label> <input type="number" id="discount-percent" placeholder="10" min="0" max="100" step="0.01" value="0">
+      <span class="error-message" id="discount-error">Please enter a valid discount</span>
+     </div>
+     
+     <div class="total-section">
+      <div class="total-row"><span>Subtotal:</span> <span id="subtotal">₹0.00</span>
+      </div>
+      <div class="total-row" id="discount-row" style="display: none;"><span>Discount <span id="discount-label">(0%)</span>:</span> <span id="discount-amount">₹0.00</span>
+      </div>
+      <div class="total-row grand-total"><span>Grand Total:</span> <span id="grand-total">₹0.00</span>
+      </div>
+     </div>
+     <div class="action-buttons">
+      <button type="button" class="btn btn-primary" onclick="generatePreview()">👁️ Preview</button> 
+      <button type="button" class="btn btn-success" onclick="downloadPDF()">📥 PDF</button> 
+      <button type="button" class="btn btn-info" onclick="downloadImage()">🖼️ Image</button>
+     </div>
+    </div>
+    <div class="preview-section">
+     <h2>Invoice Preview</h2>
+     <div id="invoice-preview" class="invoice-preview template-modern">
+      <div class="company-name-header" id="preview-company-name" style="text-align: center; margin-bottom: 20px;">
+       <h3 style="margin: 0; font-size: clamp(1.2rem, 3vw, 1.6rem); font-weight: 700; color: #333;">Your Business Name</h3>
+      </div>
+      <div class="invoice-header">
+       <div class="invoice-title">
+        INVOICE
+       </div>
+       <div class="invoice-details">
+        <div id="preview-invoice-number">
+         Invoice #: INV-001
+        </div>
+        <div id="preview-date">
+         Date:
+        </div>
+        <div id="preview-due-date">
+         Due Date:
+        </div>
+       </div>
+      </div>
+      <div class="billing-section">
+       <div class="billing-info" id="preview-bill-from">
+        <h4>Bill From:</h4>
+        <p>Your Company Name<br>
+         123 Business Street<br>
+         City, State 12345</p>
+       </div>
+       <div class="billing-info" id="preview-bill-to">
+        <h4>Bill To:</h4>
+        <p>Client Name<br>
+         456 Client Avenue<br>
+         City, State 67890</p>
+       </div>
+      </div>
+      <table class="products-table">
+       <thead>
+        <tr>
+         <th>Description</th>
+         <th class="text-right">Qty</th>
+         <th class="text-right">Rate</th>
+         <th class="text-right">Amount</th>
+        </tr>
+       </thead>
+       <tbody id="preview-products">
+        <tr>
+         <td>Sample Product</td>
+         <td class="text-right">1</td>
+         <td class="text-right">₹100.00</td>
+         <td class="text-right">₹100.00</td>
+        </tr>
+       </tbody>
+      </table>
+      <div class="invoice-totals">
+       <div class="total-row"><span>Subtotal:</span> <span id="preview-subtotal">₹100.00</span>
+       </div>
+       <div class="total-row" id="preview-discount-row" style="display: none;"><span>Discount <span id="preview-discount-label">(0%)</span>:</span> <span id="preview-discount-amount">-₹0.00</span>
+       </div>
+       <div class="total-row grand-total"><span>Total:</span> <span id="preview-grand-total">₹100.00</span>
+       </div>
+      </div>
+      <div class="signature-section" id="preview-signature" style="display: none;">
+       <h4>Signature</h4>
+       <div class="signature-line"><span id="preview-signature-text">Authorized Signature</span>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+   
+   <!-- Toast Notification -->
+   <div class="toast" id="toast">
+     <span id="toast-message"></span>
+   </div>
+  </div>
+  <script>
+        // Configuration object for Element SDK
+        const defaultConfig = {
+            app_title: "Invoice Generator",
+            currency_symbol: "₹",
+            default_company: "Your Company Name"
+        };
+
+        let config = { ...defaultConfig };
+
+        // Initialize Element SDK
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig: defaultConfig,
+                onConfigChange: async (newConfig) => {
+                    config = { ...defaultConfig, ...newConfig };
+                    
+                    // Update app title
+                    const titleElement = document.getElementById('app-title');
+                    if (titleElement) {
+                        titleElement.textContent = config.app_title || defaultConfig.app_title;
+                    }
+                    
+                    // Update currency symbols throughout the app
+                    updateCurrencySymbols();
+                    
+                    // Update default company name
+                    const billFromTextarea = document.getElementById('bill-from');
+                    if (billFromTextarea && billFromTextarea.value.includes(defaultConfig.default_company)) {
+                        billFromTextarea.value = billFromTextarea.value.replace(
+                            defaultConfig.default_company, 
+                            config.default_company || defaultConfig.default_company
+                        );
+                    }
+                    
+                    // Regenerate preview if it exists
+                    generatePreview();
+                },
+                mapToCapabilities: (config) => ({
+                    recolorables: [
+                        {
+                            get: () => config.primary_color || "#667eea",
+                            set: (value) => {
+                                config.primary_color = value;
+                                window.elementSdk.setConfig({ primary_color: value });
+                            }
+                        }
+                    ],
+                    borderables: [],
+                    fontEditable: {
+                        get: () => config.font_family || "Poppins",
+                        set: (value) => {
+                            config.font_family = value;
+                            window.elementSdk.setConfig({ font_family: value });
+                        }
+                    },
+                    fontSizeable: {
+                        get: () => config.font_size || 16,
+                        set: (value) => {
+                            config.font_size = value;
+                            window.elementSdk.setConfig({ font_size: value });
+                        }
+                    }
+                }),
+                mapToEditPanelValues: (config) => new Map([
+                    ["app_title", config.app_title || defaultConfig.app_title],
+                    ["currency_symbol", config.currency_symbol || defaultConfig.currency_symbol],
+                    ["default_company", config.default_company || defaultConfig.default_company]
+                ])
+            });
+        }
+
+        function updateCurrencySymbols() {
+            const currencySymbol = config.currency_symbol || defaultConfig.currency_symbol;
+            
+            // Update all currency displays
+            document.querySelectorAll('#subtotal, #grand-total, #preview-subtotal, #preview-grand-total').forEach(el => {
+                const value = el.textContent.replace(/[^0-9.]/g, '');
+                el.textContent = `${currencySymbol}${value}`;
+            });
+            
+            // Update product subtotals
+            document.querySelectorAll('.product-subtotal').forEach(input => {
+                const value = input.value.replace(/[^0-9.]/g, '');
+                if (value) {
+                    input.value = `${currencySymbol}${value}`;
+                }
+            });
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            toastMessage.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Validation functions
+        function validateField(fieldId, errorId, errorMessage) {
+            const field = document.getElementById(fieldId);
+            const error = document.getElementById(errorId);
+            
+            if (!field.value.trim()) {
+                field.classList.add('error');
+                error.textContent = errorMessage;
+                error.classList.add('show');
+                return false;
+            } else {
+                field.classList.remove('error');
+                error.classList.remove('show');
+                return true;
+            }
+        }
+
+        function validateInvoice() {
+            let isValid = true;
+            
+            // Validate company name if shown
+            if (document.getElementById('show-company-name').checked) {
+                isValid = validateField('company-name', 'company-name-error', 'Company name is required') && isValid;
+            }
+            
+            // Validate invoice number if shown
+            if (document.getElementById('show-invoice-number').checked) {
+                isValid = validateField('invoice-number', 'invoice-number-error', 'Invoice number is required') && isValid;
+            }
+            
+            // Validate bill from if shown
+            if (document.getElementById('show-bill-from').checked) {
+                isValid = validateField('bill-from', 'bill-from-error', 'Company details are required') && isValid;
+            }
+            
+            // Validate bill to if shown
+            if (document.getElementById('show-bill-to').checked) {
+                isValid = validateField('bill-to', 'bill-to-error', 'Client details are required') && isValid;
+            }
+            
+            // Check if at least one product has values
+            const productRows = document.querySelectorAll('.product-row');
+            let hasProduct = false;
+            productRows.forEach(row => {
+                const name = row.querySelector('.product-name').value;
+                const rate = row.querySelector('.product-rate').value;
+                if (name && rate) {
+                    hasProduct = true;
+                }
+            });
+            
+            if (!hasProduct) {
+                showToast('Please add at least one product with name and rate', 'error');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('invoice-date').value = today;
+            
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 30);
+            document.getElementById('due-date').value = dueDate.toISOString().split('T')[0];
+            
+            // Auto-generate invoice number
+            generateInvoiceNumber();
+            
+            // Set default company name
+            const companyNameInput = document.getElementById('company-name');
+            companyNameInput.value = config.default_company || defaultConfig.default_company || 'Your Business Name';
+            
+            // Set default bill from
+            const billFromTextarea = document.getElementById('bill-from');
+            billFromTextarea.value = `${config.default_company || defaultConfig.default_company}\n123 Business Street\nCity, State 12345`;
+            
+            // Setup event listeners
+            setupEventListeners();
+            
+            // Set initial template
+            const preview = document.getElementById('invoice-preview');
+            const templateSelect = document.getElementById('template');
+            preview.className = `invoice-preview template-${templateSelect.value}`;
+            
+            // Generate initial preview
+            generatePreview();
+            
+            // Show welcome toast
+            setTimeout(() => {
+                showToast('Welcome! Start creating your invoice', 'success');
+            }, 500);
+        });
+
+        function setupEventListeners() {
+            // Checkbox toggles
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const groupId = this.id.replace('show-', '') + '-group';
+                    const group = document.getElementById(groupId);
+                    if (group) {
+                        group.style.display = this.checked ? 'block' : 'none';
+                    }
+                    generatePreview();
+                });
+            });
+
+            // Template change
+            document.getElementById('template').addEventListener('change', function() {
+                const preview = document.getElementById('invoice-preview');
+                preview.className = `invoice-preview template-${this.value}`;
+            });
+
+            // Form inputs
+            document.querySelectorAll('input, textarea, select').forEach(input => {
+                input.addEventListener('input', generatePreview);
+            });
+
+            // Product calculations
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('product-qty') || e.target.classList.contains('product-rate')) {
+                    calculateProductSubtotal(e.target.closest('.product-row'));
+                    calculateTotals();
+                }
+            });
+        }
+
+        function generateInvoiceNumber() {
+            const timestamp = Date.now().toString().slice(-6);
+            document.getElementById('invoice-number').value = `INV-${timestamp}`;
+        }
+
+        function addProduct() {
+            const container = document.getElementById('products-container');
+            const productRow = document.createElement('div');
+            productRow.className = 'product-row';
+            productRow.innerHTML = `
+                <input type="text" placeholder="Product Name" class="product-name">
+                <input type="number" placeholder="Qty" class="product-qty" min="1" value="1">
+                <input type="number" placeholder="Rate" class="product-rate" min="0" step="0.01">
+                <input type="text" placeholder="0.00" class="product-subtotal" readonly>
+                <button type="button" class="remove-btn" onclick="removeProduct(this)">🗑️ Remove</button>
+            `;
+            container.appendChild(productRow);
+            
+            // Add event listeners to new inputs
+            productRow.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this.classList.contains('product-qty') || this.classList.contains('product-rate')) {
+                        calculateProductSubtotal(this.closest('.product-row'));
+                        calculateTotals();
+                    }
+                    generatePreview();
+                });
+            });
+            
+            // Animate new row
+            productRow.style.opacity = '0';
+            productRow.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                productRow.style.transition = 'all 0.3s ease';
+                productRow.style.opacity = '1';
+                productRow.style.transform = 'translateY(0)';
+            }, 10);
+            
+            showToast('Product row added', 'success');
+        }
+
+        function removeProduct(button) {
+            const container = document.getElementById('products-container');
+            if (container.children.length > 1) {
+                const row = button.closest('.product-row');
+                row.style.transition = 'all 0.3s ease';
+                row.style.opacity = '0';
+                row.style.transform = 'translateX(-20px)';
+                
+                setTimeout(() => {
+                    row.remove();
+                    calculateTotals();
+                    generatePreview();
+                    showToast('Product removed', 'success');
+                }, 300);
+            } else {
+                showToast('At least one product row is required', 'error');
+            }
+        }
+
+        function calculateProductSubtotal(row) {
+            const qty = parseFloat(row.querySelector('.product-qty').value) || 0;
+            const rate = parseFloat(row.querySelector('.product-rate').value) || 0;
+            const subtotal = qty * rate;
+            const currencySymbol = config.currency_symbol || defaultConfig.currency_symbol;
+            row.querySelector('.product-subtotal').value = `${currencySymbol}${subtotal.toFixed(2)}`;
+        }
+
+        function calculateTotals() {
+            let subtotal = 0;
+            document.querySelectorAll('.product-subtotal').forEach(input => {
+                const value = parseFloat(input.value.replace(/[^0-9.]/g, '')) || 0;
+                subtotal += value;
+            });
+            
+            const currencySymbol = config.currency_symbol || defaultConfig.currency_symbol;
+            document.getElementById('subtotal').textContent = `${currencySymbol}${subtotal.toFixed(2)}`;
+            
+            // Calculate discount
+            const showDiscount = document.getElementById('show-discount').checked;
+            const discountRow = document.getElementById('discount-row');
+            
+            let discountAmount = 0;
+            let grandTotal = subtotal;
+            
+            if (showDiscount) {
+                const discountPercent = parseFloat(document.getElementById('discount-percent').value) || 0;
+                discountAmount = (subtotal * discountPercent) / 100;
+                grandTotal = subtotal - discountAmount;
+                
+                document.getElementById('discount-label').textContent = `(${discountPercent}%)`;
+                document.getElementById('discount-amount').textContent = `-${currencySymbol}${discountAmount.toFixed(2)}`;
+                discountRow.style.display = 'flex';
+            } else {
+                discountRow.style.display = 'none';
+            }
+            
+            document.getElementById('grand-total').textContent = `${currencySymbol}${grandTotal.toFixed(2)}`;
+        }
+
+        function generatePreview() {
+            const currencySymbol = config.currency_symbol || defaultConfig.currency_symbol;
+            
+            // Update company name
+            const showCompanyName = document.getElementById('show-company-name').checked;
+            const companyNameEl = document.getElementById('preview-company-name');
+            if (showCompanyName) {
+                const companyName = document.getElementById('company-name').value || 'Your Business Name';
+                companyNameEl.querySelector('h3').textContent = companyName;
+                companyNameEl.style.display = 'block';
+            } else {
+                companyNameEl.style.display = 'none';
+            }
+            
+            // Update invoice number
+            const showInvoiceNumber = document.getElementById('show-invoice-number').checked;
+            const invoiceNumberEl = document.getElementById('preview-invoice-number');
+            if (showInvoiceNumber) {
+                const invoiceNumber = document.getElementById('invoice-number').value || 'INV-001';
+                invoiceNumberEl.textContent = `Invoice #: ${invoiceNumber}`;
+                invoiceNumberEl.style.display = 'block';
+            } else {
+                invoiceNumberEl.style.display = 'none';
+            }
+
+            // Update dates
+            const showDate = document.getElementById('show-date').checked;
+            const dateEl = document.getElementById('preview-date');
+            if (showDate) {
+                const date = document.getElementById('invoice-date').value;
+                if (date) {
+                    const dateObj = new Date(date);
+                    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                    const formattedDate = dateObj.toLocaleDateString();
+                    dateEl.innerHTML = `Date: ${formattedDate}<span class="day-name">${dayName}</span>`;
+                } else {
+                    dateEl.textContent = 'Date: ';
+                }
+                dateEl.style.display = 'block';
+            } else {
+                dateEl.style.display = 'none';
+            }
+
+            const showDueDate = document.getElementById('show-due-date').checked;
+            const dueDateEl = document.getElementById('preview-due-date');
+            if (showDueDate) {
+                const dueDate = document.getElementById('due-date').value;
+                if (dueDate) {
+                    const dueDateObj = new Date(dueDate);
+                    const dayName = dueDateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                    const formattedDate = dueDateObj.toLocaleDateString();
+                    dueDateEl.innerHTML = `Due Date: ${formattedDate}<span class="day-name">${dayName}</span>`;
+                } else {
+                    dueDateEl.textContent = 'Due Date: ';
+                }
+                dueDateEl.style.display = 'block';
+            } else {
+                dueDateEl.style.display = 'none';
+            }
+
+            // Check if invoice header should be hidden
+            const invoiceHeader = document.querySelector('.invoice-header');
+            const hasInvoiceNumber = showInvoiceNumber;
+            const hasDate = showDate;
+            const hasDueDate = showDueDate;
+            
+            if (!hasInvoiceNumber && !hasDate && !hasDueDate) {
+                invoiceHeader.style.display = 'none';
+            } else {
+                invoiceHeader.style.display = 'flex';
+            }
+
+            // Update billing info
+            const showBillFrom = document.getElementById('show-bill-from').checked;
+            const billFromEl = document.getElementById('preview-bill-from');
+            if (showBillFrom) {
+                const billFrom = document.getElementById('bill-from').value || 'Your Company Name';
+                billFromEl.innerHTML = `<h4>Bill From:</h4><p>${billFrom.replace(/\n/g, '<br>')}</p>`;
+                billFromEl.style.display = 'block';
+            } else {
+                billFromEl.style.display = 'none';
+            }
+
+            const showBillTo = document.getElementById('show-bill-to').checked;
+            const billToEl = document.getElementById('preview-bill-to');
+            if (showBillTo) {
+                const billTo = document.getElementById('bill-to').value || 'Client Name';
+                billToEl.innerHTML = `<h4>Bill To:</h4><p>${billTo.replace(/\n/g, '<br>')}</p>`;
+                billToEl.style.display = 'block';
+            } else {
+                billToEl.style.display = 'none';
+            }
+
+            // Check if billing section should be hidden
+            const billingSection = document.querySelector('.billing-section');
+            if (!showBillFrom && !showBillTo) {
+                billingSection.style.display = 'none';
+            } else {
+                billingSection.style.display = 'grid';
+            }
+
+            // Update products
+            const productsContainer = document.getElementById('preview-products');
+            productsContainer.innerHTML = '';
+            
+            let total = 0;
+            document.querySelectorAll('.product-row').forEach(row => {
+                const name = row.querySelector('.product-name').value || 'Product';
+                const qty = row.querySelector('.product-qty').value || '1';
+                const rate = parseFloat(row.querySelector('.product-rate').value) || 0;
+                const subtotal = parseFloat(qty) * rate;
+                total += subtotal;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${name}</td>
+                    <td class="text-right">${qty}</td>
+                    <td class="text-right">${currencySymbol}${rate.toFixed(2)}</td>
+                    <td class="text-right">${currencySymbol}${subtotal.toFixed(2)}</td>
+                `;
+                productsContainer.appendChild(tr);
+            });
+
+            // Update totals with discount
+            const showDiscount = document.getElementById('show-discount').checked;
+            const previewDiscountRow = document.getElementById('preview-discount-row');
+            
+            let discountAmount = 0;
+            let grandTotal = total;
+            
+            document.getElementById('preview-subtotal').textContent = `${currencySymbol}${total.toFixed(2)}`;
+            
+            if (showDiscount) {
+                const discountPercent = parseFloat(document.getElementById('discount-percent').value) || 0;
+                discountAmount = (total * discountPercent) / 100;
+                grandTotal = total - discountAmount;
+                
+                document.getElementById('preview-discount-label').textContent = `(${discountPercent}%)`;
+                document.getElementById('preview-discount-amount').textContent = `-${currencySymbol}${discountAmount.toFixed(2)}`;
+                previewDiscountRow.style.display = 'flex';
+            } else {
+                previewDiscountRow.style.display = 'none';
+            }
+            
+            document.getElementById('preview-grand-total').textContent = `${currencySymbol}${grandTotal.toFixed(2)}`;
+
+            // Update signature
+            const showSignature = document.getElementById('show-signature').checked;
+            const signatureEl = document.getElementById('preview-signature');
+            if (showSignature) {
+                const signatureText = document.getElementById('signature-text').value || 'Authorized Signature';
+                document.getElementById('preview-signature-text').textContent = signatureText;
+                signatureEl.style.display = 'block';
+            } else {
+                signatureEl.style.display = 'none';
+            }
+
+            // Recalculate totals in form
+            calculateTotals();
+        }
+
+        function downloadPDF() {
+            if (!validateInvoice()) {
+                return;
+            }
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span>Generating PDF...';
+            btn.disabled = true;
+
+            const { jsPDF } = window.jspdf;
+            const element = document.getElementById('invoice-preview');
+            
+            html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                logging: false
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const imgWidth = 210;
+                const pageHeight = 295;
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                
+                let position = 0;
+                
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                const invoiceNumber = document.getElementById('invoice-number').value || 'invoice';
+                pdf.save(`${invoiceNumber}.pdf`);
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showToast('PDF downloaded successfully!', 'success');
+            }).catch(error => {
+                console.error('Error generating PDF:', error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showToast('Error generating PDF. Please try again.', 'error');
+            });
+        }
+
+        function downloadImage() {
+            if (!validateInvoice()) {
+                return;
+            }
+
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner"></span>Generating Image...';
+            btn.disabled = true;
+
+            const element = document.getElementById('invoice-preview');
+            
+            html2canvas(element, {
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `${document.getElementById('invoice-number').value || 'invoice'}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showToast('Image downloaded successfully!', 'success');
+            }).catch(error => {
+                console.error('Error generating image:', error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showToast('Error generating image. Please try again.', 'error');
+            });
+        }
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'998a37ac565884b9',t:'MTc2MjE1NTU2My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
