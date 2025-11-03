@@ -1178,55 +1178,67 @@
      </div>
      
      <div class="section-divider">
-       <h3>📋 Invoice Information</h3>
-     </div>
-     <div class="checkbox-group"><input type="checkbox" id="show-company-name"> <label for="show-company-name">Show Company Name</label>
-     </div>
-     <div class="form-group" id="company-name-group" style="display: none;"><label for="company-name">Company Name *</label> <input type="text" id="company-name" placeholder="Your Business Name" required>
-      <span class="error-message" id="company-name-error">Company name is required</span>
-     </div>
-     <div class="checkbox-group"><input type="checkbox" id="show-invoice-number"> <label for="show-invoice-number">Show Invoice Number</label>
-     </div>
-     <div class="form-group" id="invoice-number-group" style="display: none;"><label for="invoice-number">Invoice Number *</label> <input type="text" id="invoice-number" placeholder="INV-001" required>
-      <span class="error-message" id="invoice-number-error">Invoice number is required</span>
-     </div>
-     
-     <div class="section-divider">
-       <h3>🏢 Billing Details</h3>
-     </div>
-     <div class="checkbox-group"><input type="checkbox" id="show-bill-from"> <label for="show-bill-from">Show Bill From</label>
-     </div>
-     <div class="form-group" id="bill-from-group" style="display: none;"><label for="bill-from">Bill From (Company Details) *</label> <textarea id="bill-from" rows="3" placeholder="Your Company Name
-123 Business Street
-City, State 12345" required></textarea>
-      <span class="error-message" id="bill-from-error">Company details are required</span>
-     </div>
-     <div class="checkbox-group"><input type="checkbox" id="show-bill-to"> <label for="show-bill-to">Show Bill To</label>
-     </div>
-     <div class="form-group" id="bill-to-group" style="display: none;"><label for="bill-to">Bill To (Client Details) *</label> <textarea id="bill-to" rows="3" placeholder="Client Name
-456 Client Avenue
-City, State 67890" required></textarea>
-      <span class="error-message" id="bill-to-error">Client details are required</span>
-     </div>
-     
-     <div class="section-divider">
-       <h3>📅 Dates</h3>
+       <h3>� Date</h3>
      </div>
      <div class="checkbox-group"><input type="checkbox" id="show-date" checked> <label for="show-date">Show Date</label>
      </div>
      <div class="form-group" id="date-group"><label for="invoice-date">Invoice Date</label> <input type="date" id="invoice-date">
      </div>
-     <div class="checkbox-group"><input type="checkbox" id="show-due-date"> <label for="show-due-date">Show Due Date</label>
-     </div>
-     <div class="form-group" id="due-date-group" style="display: none;"><label for="due-date">Due Date</label> <input type="date" id="due-date">
-     </div>
      
      <div class="section-divider">
-       <h3>✍️ Signature</h3>
+       <h3>ℹ️ Additional Information</h3>
      </div>
-     <div class="checkbox-group"><input type="checkbox" id="show-signature"> <label for="show-signature">Show Signature</label>
+     <div class="checkbox-group"><input type="checkbox" id="show-additional-info"> <label for="show-additional-info">Show Additional Information</label>
      </div>
-     <div class="form-group" id="signature-group" style="display: none;"><label for="signature-text">Signature Text</label> <input type="text" id="signature-text" placeholder="Authorized Signature">
+     
+     <div id="additional-info-container" style="display: none;">
+       <div class="section-divider">
+         <h3>�📋 Invoice Information</h3>
+       </div>
+       <div class="checkbox-group"><input type="checkbox" id="show-company-name"> <label for="show-company-name">Show Company Name</label>
+       </div>
+       <div class="form-group" id="company-name-group" style="display: none;"><label for="company-name">Company Name *</label> <input type="text" id="company-name" placeholder="Your Business Name" required>
+        <span class="error-message" id="company-name-error">Company name is required</span>
+       </div>
+       <div class="checkbox-group"><input type="checkbox" id="show-invoice-number"> <label for="show-invoice-number">Show Invoice Number</label>
+       </div>
+       <div class="form-group" id="invoice-number-group" style="display: none;"><label for="invoice-number">Invoice Number *</label> <input type="text" id="invoice-number" placeholder="INV-001" required>
+        <span class="error-message" id="invoice-number-error">Invoice number is required</span>
+       </div>
+       
+       <div class="section-divider">
+         <h3>🏢 Billing Details</h3>
+       </div>
+       <div class="checkbox-group"><input type="checkbox" id="show-bill-from"> <label for="show-bill-from">Show Bill From</label>
+       </div>
+       <div class="form-group" id="bill-from-group" style="display: none;"><label for="bill-from">Bill From (Company Details) *</label> <textarea id="bill-from" rows="3" placeholder="Your Company Name
+123 Business Street
+City, State 12345" required></textarea>
+        <span class="error-message" id="bill-from-error">Company details are required</span>
+       </div>
+       <div class="checkbox-group"><input type="checkbox" id="show-bill-to"> <label for="show-bill-to">Show Bill To</label>
+       </div>
+       <div class="form-group" id="bill-to-group" style="display: none;"><label for="bill-to">Bill To (Client Details) *</label> <textarea id="bill-to" rows="3" placeholder="Client Name
+456 Client Avenue
+City, State 67890" required></textarea>
+        <span class="error-message" id="bill-to-error">Client details are required</span>
+       </div>
+       
+       <div class="section-divider">
+         <h3>📅 Additional Dates</h3>
+       </div>
+       <div class="checkbox-group"><input type="checkbox" id="show-due-date"> <label for="show-due-date">Show Due Date</label>
+       </div>
+       <div class="form-group" id="due-date-group" style="display: none;"><label for="due-date">Due Date</label> <input type="date" id="due-date">
+       </div>
+       
+       <div class="section-divider">
+         <h3>✍️ Signature</h3>
+       </div>
+       <div class="checkbox-group"><input type="checkbox" id="show-signature"> <label for="show-signature">Show Signature</label>
+       </div>
+       <div class="form-group" id="signature-group" style="display: none;"><label for="signature-text">Signature Text</label> <input type="text" id="signature-text" placeholder="Authorized Signature">
+       </div>
      </div>
      
      <div class="section-divider">
@@ -1538,9 +1550,22 @@ City, State 67890" required></textarea>
         });
 
         function setupEventListeners() {
+            // Additional Information toggle
+            const additionalInfoCheckbox = document.getElementById('show-additional-info');
+            const additionalInfoContainer = document.getElementById('additional-info-container');
+            
+            additionalInfoCheckbox.addEventListener('change', function() {
+                additionalInfoContainer.style.display = this.checked ? 'block' : 'none';
+            });
+            
             // Checkbox toggles
             document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
+                    // Skip the additional info checkbox as it's handled separately
+                    if (this.id === 'show-additional-info') {
+                        return;
+                    }
+                    
                     const groupId = this.id.replace('show-', '') + '-group';
                     const group = document.getElementById(groupId);
                     if (group) {
